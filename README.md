@@ -1,4 +1,4 @@
-# structhash
+# structhash [![GoDoc](https://godoc.org/github.com/cnf/structhash?status.svg)](https://godoc.org/github.com/cnf/structhash)
 
 structhash is a Go library for generating hash strings of arbitrary data structures.
 
