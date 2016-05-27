@@ -54,3 +54,27 @@ func main() {
     // Prints: 00f550e11183e2bb70f8bf12699c3866e5c8fcb3
 }
 ```
+
+## Struct tags
+
+structhash supports struct tags in the following forms:
+
+* `hash:"-"`, or
+* `hash:"name, version(number) lastversion(number)"`
+
+All fields are optional and may be ommitted. Their semantics is:
+
+* `-` - ignore field
+* `name` - rename field (may be useful when you want to rename field but keep hashes backward compatible)
+* `version(number)` - ignore field if version passed to structhash is lesser than given number
+* `lastversion(number)` - ignore field if version passed to structhash is greater than given number
+
+Example:
+
+```go
+type Person struct {
+    Ignored string `hash:"-"`
+    Renamed string `hash:"NewName, version(1)"`
+    Legacy  int    `hash:",version(1) lastversion(2)"`
+}
+```

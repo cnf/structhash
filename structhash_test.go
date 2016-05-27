@@ -17,6 +17,21 @@ type Second struct {
 	Slice []int             `version:"1"`
 }
 
+type Tags1 struct {
+	Int int    `hash:"-"`
+	Str string `hash:"Foo, version(1) lastversion(2)"`
+	Bar string `hash:",version(1)"`
+}
+
+type Tags2 struct {
+	Foo string
+	Bar string
+}
+
+type Tags3 struct {
+	Bar string
+}
+
 func dataSetup() *First {
 	tmpmap := make(map[string]string)
 	tmpmap["foo"] = "bar"
@@ -65,5 +80,29 @@ func TestHash(t *testing.T) {
 	v2md5 := fmt.Sprintf("v2_%x", Md5(data, 2))
 	if v2md5 != v2Hash {
 		t.Errorf("%s is not %s", v2md5, v2Hash[3:])
+	}
+}
+
+func TestTags(t *testing.T) {
+	t1 := Tags1{11, "foo", "bar"}
+	t1x := Tags1{22, "foo", "bar"}
+	t2 := Tags2{"foo", "bar"}
+	t3 := Tags3{"bar"}
+
+	t1_dump := string(Dump(t1, 1))
+	t1x_dump := string(Dump(t1x, 1))
+	if t1_dump != t1x_dump {
+		t.Errorf("%s is not %s", t1_dump, t1x_dump)
+	}
+
+	t2_dump := string(Dump(t2, 1))
+	if t1_dump != t2_dump {
+		t.Errorf("%s is not %s", t1_dump, t2_dump)
+	}
+
+	t1v3_dump := string(Dump(t1, 3))
+	t3v3_dump := string(Dump(t3, 3))
+	if t1v3_dump != t3v3_dump {
+		t.Errorf("%s is not %s", t1v3_dump, t3v3_dump)
 	}
 }

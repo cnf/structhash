@@ -58,7 +58,7 @@ func Sha1(c interface{}, version int) []byte {
 	return sum[:]
 }
 
-type structFieldFilter func(reflect.StructField) bool
+type structFieldFilter func(reflect.StructField) (string, bool)
 
 func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
 	switch val.Kind() {
@@ -92,7 +92,8 @@ func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
 		strmap := make(map[string]string, len)
 		// Map/serialize all values
 		for i := 0; i < len; i++ {
-			strmap[strValue(mk[i], depth+1, fltr)] = strValue(val.MapIndex(mk[i]), depth+1, fltr)
+			strmap[strValue(mk[i], depth+1, fltr)] =
+				strValue(val.MapIndex(mk[i]), depth+1, fltr)
 		}
 
 		// Create array to hold map keys and sort them
@@ -119,11 +120,16 @@ func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
 		// Get all fields
 		for i := 0; i < flen; i++ {
 			field := vtype.Field(i)
-			if (fltr != nil) && (!fltr(field)) {
-				continue
+			name := field.Name
+			if fltr != nil {
+				if newname, ok := fltr(field); ok {
+					name = newname
+				} else {
+					continue
+				}
 			}
 			fval := val.Field(i)
-			smap[field.Name] = strValue(fval, depth+1, fltr)
+			smap[name] = strValue(fval, depth+1, fltr)
 		}
 		// Get the keys and sort them
 		skey := make([]string, len(smap))
@@ -149,25 +155,57 @@ func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
 	}
 }
 
-// func serializeFilter(object interface{}, fltr structFieldFilter) string {
-// 	return strValue(reflect.ValueOf(object), 0, fltr) + "\n"
-// }
-
 func serialize(object interface{}, version int) string {
-	return strValue(reflect.ValueOf(object), 0, func(f reflect.StructField) bool {
+	return strValue(reflect.ValueOf(object), 0, func(f reflect.StructField) (string, bool) {
 		var err error
+		name := f.Name
 		ver := 0
-		if lastver, err := strconv.Atoi(f.Tag.Get("lastversion")); err == nil {
-			if lastver < version {
-				return false
+		lastver := -1
+		if str := f.Tag.Get("lastversion"); str != "" {
+			if lastver, err = strconv.Atoi(str); err != nil {
+				return "", false
 			}
 		}
-		if ver, err = strconv.Atoi(f.Tag.Get("version")); err != nil {
-			return false
+		if str := f.Tag.Get("version"); str != "" {
+			if ver, err = strconv.Atoi(str); err != nil {
+				return "", false
+			}
 		}
-		if ver <= version {
-			return true
+		if str := f.Tag.Get("hash"); str != "" {
+			parts := strings.Split(str, ",")
+			if len(parts) > 0 {
+				n := strings.TrimSpace(parts[0])
+				if n == "-" {
+					return "", false
+				} else if n != "" {
+					name = n
+				}
+			}
+			if len(parts) > 1 {
+				for _, tag := range strings.Split(parts[1], " ") {
+					tag = strings.TrimSpace(tag)
+					if strings.HasPrefix(tag, "version(") {
+						arg := strings.TrimPrefix(tag, "version(")
+						arg = strings.TrimSuffix(arg, ")")
+						if ver, err = strconv.Atoi(arg); err != nil {
+							return "", false
+						}
+					} else if strings.HasPrefix(tag, "lastversion(") {
+						arg := strings.TrimPrefix(tag, "lastversion(")
+						arg = strings.TrimSuffix(arg, ")")
+						if lastver, err = strconv.Atoi(arg); err != nil {
+							return "", false
+						}
+					}
+				}
+			}
 		}
-		return false
+		if lastver != -1 && lastver < version {
+			return "", false
+		}
+		if ver > version {
+			return "", false
+		}
+		return name, true
 	}) + "\n"
 }

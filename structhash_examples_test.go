@@ -1,9 +1,9 @@
 package structhash
 
 import (
-	"fmt"
 	"crypto/md5"
 	"crypto/sha1"
+	"fmt"
 )
 
 func ExampleHash() {
@@ -38,29 +38,30 @@ func ExampleHash() {
 	}
 	fmt.Printf("%s", hash)
 	// Output:
-	// v1_55743877f3ffd5fc834e97bc43a6e7bd
+	// v1_d00068b9441e09d87689c7cb06a646a1
 }
 
-func ExampleHash_version() {
+func ExampleHash_tags() {
 	type Person struct {
-		Name   string            `version:"1"`
-		Age    int               `version:"1"`
-		Emails []string          `version:"1"`
-		Extra  map[string]string `version:"1" lastversion:"2"`
-		Spouse *Person           `version:"2"`
+		Ignored  string            `hash:"-"`
+		FullName string            `hash:"Name, version(1)"`
+		Age      int               `hash:",version(1)"`
+		Emails   []string          `hash:",version(1)"`
+		Extra    map[string]string `hash:",version(1) lastversion(2)"`
+		Spouse   *Person           `hash:",version(2)"`
 	}
 	bill := &Person{
-		Name:   "Bill",
-		Age:    24,
-		Emails: []string{"bob@foo.org", "bob@bar.org"},
+		FullName: "Bill",
+		Age:      24,
+		Emails:   []string{"bob@foo.org", "bob@bar.org"},
 		Extra: map[string]string{
 			"facebook": "Bob42",
 		},
 	}
 	bob := &Person{
-		Name:   "Bob",
-		Age:    42,
-		Emails: []string{"bob@foo.org", "bob@bar.org"},
+		FullName: "Bob",
+		Age:      42,
+		Emails:   []string{"bob@foo.org", "bob@bar.org"},
 		Extra: map[string]string{
 			"facebook": "Bob42",
 		},
