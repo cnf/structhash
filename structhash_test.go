@@ -1,7 +1,7 @@
 package structhash
 
 import (
-	// "fmt"
+	"fmt"
 	"testing"
 )
 
@@ -56,5 +56,14 @@ func TestHash(t *testing.T) {
 	// fmt.Println(v2)
 	if v2 != v2Hash {
 		t.Errorf("%s is not %s", v2, v2Hash)
+	}
+
+	v1md5 := fmt.Sprintf("v1_%x", Md5(data, 1))
+	if v1md5 != v1Hash {
+		t.Errorf("%s is not %s", v1md5, v1Hash[3:])
+	}
+	v2md5 := fmt.Sprintf("v2_%x", Md5(data, 2))
+	if v2md5 != v2Hash {
+		t.Errorf("%s is not %s", v2md5, v2Hash[3:])
 	}
 }

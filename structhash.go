@@ -2,6 +2,7 @@ package structhash
 
 import (
 	"crypto/md5"
+	"crypto/sha1"
 	"fmt"
 	"reflect"
 	"sort"
@@ -29,10 +30,32 @@ func Version(h string) int {
 }
 
 // Hash takes a data structure and returns a hash string of that data structure
-// at the version asked
+// at the version asked.
+//
+// This function uses md5 hashing function and default formatter. See also Dump()
+// function.
 func Hash(c interface{}, version int) (string, error) {
-	serial := serialize(c, version)
-	return fmt.Sprintf("v%d_%x", version, md5.Sum([]byte(serial))), nil
+	return fmt.Sprintf("v%d_%x", version, Md5(c, version)), nil
+}
+
+// Dump takes a data structure and returns its byte representation. This can be
+// useful if you need to use your own hashing function or formatter.
+func Dump(c interface{}, version int) []byte {
+	return []byte(serialize(c, version))
+}
+
+// Md5 takes a data structure and returns its md5 hash.
+// This is a shorthand for md5.Sum(Dump(c, version)).
+func Md5(c interface{}, version int) []byte {
+	sum := md5.Sum(Dump(c, version))
+	return sum[:]
+}
+
+// Sha1 takes a data structure and returns its sha1 hash.
+// This is a shorthand for sha1.Sum(Dump(c, version)).
+func Sha1(c interface{}, version int) []byte {
+	sum := sha1.Sum(Dump(c, version))
+	return sum[:]
 }
 
 type structFieldFilter func(reflect.StructField) bool
