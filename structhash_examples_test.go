@@ -2,6 +2,8 @@ package structhash
 
 import (
 	"fmt"
+	"crypto/md5"
+	"crypto/sha1"
 )
 
 func ExampleHash() {
@@ -83,6 +85,39 @@ func ExampleHash_version() {
 	// v1_461558d2570e10f79693e34ea309d1ad
 	// v2_d00068b9441e09d87689c7cb06a646a1
 	// v3_b5b651c6650939ef4d063d05caa5c778
+}
+
+func ExampleDump() {
+	type Person struct {
+		Name   string
+		Age    int
+		Emails []string
+		Extra  map[string]string
+		Spouse *Person
+	}
+	bill := &Person{
+		Name:   "Bill",
+		Age:    24,
+		Emails: []string{"bob@foo.org", "bob@bar.org"},
+		Extra: map[string]string{
+			"facebook": "Bob42",
+		},
+	}
+	bob := &Person{
+		Name:   "Bob",
+		Age:    42,
+		Emails: []string{"bob@foo.org", "bob@bar.org"},
+		Extra: map[string]string{
+			"facebook": "Bob42",
+		},
+		Spouse: bill,
+	}
+
+	fmt.Printf("md5:  %x\n", md5.Sum(Dump(bob, 1)))
+	fmt.Printf("sha1: %x\n", sha1.Sum(Dump(bob, 1)))
+	// Output:
+	// md5:  d00068b9441e09d87689c7cb06a646a1
+	// sha1: 24c19cd7a9fcfd4d4394e1f6a1874bd8751645e3
 }
 
 func ExampleVersion() {
