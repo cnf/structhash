@@ -74,7 +74,11 @@ func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
 		}
 		return "false"
 	case reflect.Ptr:
-		return strValue(reflect.Indirect(val), depth, fltr)
+		if !val.IsNil() || val.Type().Elem().Kind() == reflect.Struct {
+			return strValue(reflect.Indirect(val), depth, fltr)
+		} else {
+			return strValue(reflect.Zero(val.Type().Elem()), depth, fltr)
+		}
 	case reflect.Array, reflect.Slice:
 		len := val.Len()
 		ret := "["
@@ -113,7 +117,6 @@ func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
 		ret = ret + "]"
 		return ret
 	case reflect.Struct:
-
 		vtype := val.Type()
 		flen := vtype.NumField()
 		smap := make(map[string]string)

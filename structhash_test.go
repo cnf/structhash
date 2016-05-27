@@ -32,6 +32,14 @@ type Tags3 struct {
 	Bar string
 }
 
+type Nils struct {
+	Str   *string
+	Int   *int
+	Bool  *bool
+	Map   map[string]string
+	Slice []string
+}
+
 func dataSetup() *First {
 	tmpmap := make(map[string]string)
 	tmpmap["foo"] = "bar"
@@ -60,7 +68,7 @@ func TestHash(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// fmt.Println(v1)
+	// fmt.Println(string(Dump(data, 1)))
 	if v1 != v1Hash {
 		t.Errorf("%s is not %s", v1, v1Hash)
 	}
@@ -68,7 +76,7 @@ func TestHash(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// fmt.Println(v2)
+	// fmt.Println(string(Dump(data, 2)))
 	if v2 != v2Hash {
 		t.Errorf("%s is not %s", v2, v2Hash)
 	}
@@ -104,5 +112,29 @@ func TestTags(t *testing.T) {
 	t3v3_dump := string(Dump(t3, 3))
 	if t1v3_dump != t3v3_dump {
 		t.Errorf("%s is not %s", t1v3_dump, t3v3_dump)
+	}
+}
+
+func TestNil(t *testing.T) {
+	s1 := Nils{
+		Str: nil,
+		Int: nil,
+		Bool: nil,
+		Map: nil,
+		Slice: nil,
+	}
+
+	s2 := Nils{
+		Str: new(string),
+		Int: new(int),
+		Bool: new(bool),
+		Map: make(map[string]string),
+		Slice: make([]string, 0),
+	}
+
+	s1_dump := string(Dump(s1, 1))
+	s2_dump := string(Dump(s2, 1))
+	if s1_dump != s2_dump {
+		t.Errorf("%s is not %s", s1_dump, s2_dump)
 	}
 }
