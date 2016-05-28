@@ -117,18 +117,18 @@ func TestTags(t *testing.T) {
 
 func TestNil(t *testing.T) {
 	s1 := Nils{
-		Str: nil,
-		Int: nil,
-		Bool: nil,
-		Map: nil,
+		Str:   nil,
+		Int:   nil,
+		Bool:  nil,
+		Map:   nil,
 		Slice: nil,
 	}
 
 	s2 := Nils{
-		Str: new(string),
-		Int: new(int),
-		Bool: new(bool),
-		Map: make(map[string]string),
+		Str:   new(string),
+		Int:   new(int),
+		Bool:  new(bool),
+		Map:   make(map[string]string),
 		Slice: make([]string, 0),
 	}
 

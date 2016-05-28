@@ -43,12 +43,12 @@ func ExampleHash() {
 
 func ExampleHash_tags() {
 	type Person struct {
-		Ignored  string            `hash:"-"`
-		NewName  string            `hash:"name:OldName version:1"`
-		Age      int               `hash:"version:1"`
-		Emails   []string          `hash:"version:1"`
-		Extra    map[string]string `hash:"version:1 lastversion:2"`
-		Spouse   *Person           `hash:"version:2"`
+		Ignored string            `hash:"-"`
+		NewName string            `hash:"name:OldName version:1"`
+		Age     int               `hash:"version:1"`
+		Emails  []string          `hash:"version:1"`
+		Extra   map[string]string `hash:"version:1 lastversion:2"`
+		Spouse  *Person           `hash:"version:2"`
 	}
 	bill := &Person{
 		NewName: "Bill",
