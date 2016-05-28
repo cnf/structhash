@@ -2,6 +2,13 @@
 
 structhash is a Go library for generating hash strings of arbitrary data structures.
 
+## Features
+
+* fields may be ignored or renamed (like in `json.Marshal`, but using different struct tag)
+* fields may be versioned
+* fields order in struct doesn't matter (unlike `json.Marshal`)
+* nil values are treated equally to zero values
+
 ## Installation
 
 Standard `go get`:
@@ -23,7 +30,7 @@ import (
     "fmt"
     "crypto/md5"
     "crypto/sha1"
-    "github.com/gavv/structhash"
+    "github.com/cnf/structhash"
 )
 
 type S struct {
@@ -39,19 +46,22 @@ func main() {
         panic(err)
     }
     fmt.Println(hash)
-    // Prints: v1_55743877f3ffd5fc834e97bc43a6e7bd
+    // Prints: v1_41011bfa1a996db6d0b1075981f5aa8f
+
+    fmt.Println(structhash.Version(hash))
+    // Prints: 1
 
     fmt.Printf("%x\n", structhash.Md5(s, 1))
-    // Prints: 55743877f3ffd5fc834e97bc43a6e7bd
+    // Prints: 41011bfa1a996db6d0b1075981f5aa8f
 
     fmt.Printf("%x\n", structhash.Sha1(s, 1))
-    // Prints: 00f550e11183e2bb70f8bf12699c3866e5c8fcb3
+    // Prints: 5ff72df7212ce8c55838fb3ec6ad0c019881a772
 
     fmt.Printf("%x\n", md5.Sum(structhash.Dump(s, 1)))
-    // Prints: 55743877f3ffd5fc834e97bc43a6e7bd
+    // Prints: 41011bfa1a996db6d0b1075981f5aa8f
 
     fmt.Printf("%x\n", sha1.Sum(structhash.Dump(s, 1)))
-    // Prints: 00f550e11183e2bb70f8bf12699c3866e5c8fcb3
+    // Prints: 5ff72df7212ce8c55838fb3ec6ad0c019881a772
 }
 ```
 
@@ -72,9 +82,13 @@ All fields are optional and may be ommitted. Their semantics is:
 Example:
 
 ```go
-type Person struct {
+type MyStruct struct {
     Ignored string `hash:"-"`
     Renamed string `hash:"NewName, version(1)"`
     Legacy  int    `hash:",version(1) lastversion(2)"`
 }
 ```
+
+## Nil values
+
+When hash is calculated, nil pointers, nil slices, and nil maps are treated equally to zero values of corresponding type. E.g., nil pointer to string is equivalent to empty string, and nil slice is equivalent to empty slice.
