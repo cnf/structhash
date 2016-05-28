@@ -175,30 +175,24 @@ func serialize(object interface{}, version int) string {
 			}
 		}
 		if str := f.Tag.Get("hash"); str != "" {
-			parts := strings.Split(str, ",")
-			if len(parts) > 0 {
-				n := strings.TrimSpace(parts[0])
-				if n == "-" {
-					return "", false
-				} else if n != "" {
-					name = n
-				}
+			if str == "-" {
+				return "", false
 			}
-			if len(parts) > 1 {
-				for _, tag := range strings.Split(parts[1], " ") {
-					tag = strings.TrimSpace(tag)
-					if strings.HasPrefix(tag, "version(") {
-						arg := strings.TrimPrefix(tag, "version(")
-						arg = strings.TrimSuffix(arg, ")")
-						if ver, err = strconv.Atoi(arg); err != nil {
-							return "", false
-						}
-					} else if strings.HasPrefix(tag, "lastversion(") {
-						arg := strings.TrimPrefix(tag, "lastversion(")
-						arg = strings.TrimSuffix(arg, ")")
-						if lastver, err = strconv.Atoi(arg); err != nil {
-							return "", false
-						}
+			for _, tag := range strings.Split(str, " ") {
+				args := strings.Split(strings.TrimSpace(tag), ":")
+				if len(args) != 2 {
+					return "", false
+				}
+				switch args[0] {
+				case "name":
+					name = args[1]
+				case "version":
+					if ver, err = strconv.Atoi(args[1]); err != nil {
+						return "", false
+					}
+				case "lastversion":
+					if lastver, err = strconv.Atoi(args[1]); err != nil {
+						return "", false
 					}
 				}
 			}

@@ -44,24 +44,24 @@ func ExampleHash() {
 func ExampleHash_tags() {
 	type Person struct {
 		Ignored  string            `hash:"-"`
-		FullName string            `hash:"Name, version(1)"`
-		Age      int               `hash:",version(1)"`
-		Emails   []string          `hash:",version(1)"`
-		Extra    map[string]string `hash:",version(1) lastversion(2)"`
-		Spouse   *Person           `hash:",version(2)"`
+		NewName  string            `hash:"name:OldName version:1"`
+		Age      int               `hash:"version:1"`
+		Emails   []string          `hash:"version:1"`
+		Extra    map[string]string `hash:"version:1 lastversion:2"`
+		Spouse   *Person           `hash:"version:2"`
 	}
 	bill := &Person{
-		FullName: "Bill",
-		Age:      24,
-		Emails:   []string{"bob@foo.org", "bob@bar.org"},
+		NewName: "Bill",
+		Age:     24,
+		Emails:  []string{"bob@foo.org", "bob@bar.org"},
 		Extra: map[string]string{
 			"facebook": "Bob42",
 		},
 	}
 	bob := &Person{
-		FullName: "Bob",
-		Age:      42,
-		Emails:   []string{"bob@foo.org", "bob@bar.org"},
+		NewName: "Bob",
+		Age:     42,
+		Emails:  []string{"bob@foo.org", "bob@bar.org"},
 		Extra: map[string]string{
 			"facebook": "Bob42",
 		},
@@ -83,9 +83,9 @@ func ExampleHash_tags() {
 	fmt.Printf("%s\n", hashV2)
 	fmt.Printf("%s\n", hashV3)
 	// Output:
-	// v1_461558d2570e10f79693e34ea309d1ad
-	// v2_d00068b9441e09d87689c7cb06a646a1
-	// v3_b5b651c6650939ef4d063d05caa5c778
+	// v1_a4500d206f830e75bb4b362705ee6240
+	// v2_67caf9d9f9d2922ecc6f997bace6f06c
+	// v3_a10f69ec95d652fc16f5f744a554e624
 }
 
 func ExampleDump() {

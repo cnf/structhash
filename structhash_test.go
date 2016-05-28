@@ -19,8 +19,8 @@ type Second struct {
 
 type Tags1 struct {
 	Int int    `hash:"-"`
-	Str string `hash:"Foo, version(1) lastversion(2)"`
-	Bar string `hash:",version(1)"`
+	Str string `hash:"name:Foo version:1 lastversion:2"`
+	Bar string `hash:"version:1"`
 }
 
 type Tags2 struct {
