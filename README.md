@@ -76,7 +76,7 @@ All fields are optional and may be ommitted. Their semantics is:
 
 * `-` - ignore field
 * `name:{string}` - rename field (may be useful when you want to rename field but keep hashes unchanged for backward compatibility)
-* `version:{number}` - ignore field if version passed to structhash is lesser than given number
+* `version:{number}` - ignore field if version passed to structhash is smaller than given number
 * `lastversion:{number}` - ignore field if version passed to structhash is greater than given number
 
 Example:
