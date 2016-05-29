@@ -117,7 +117,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		items := make([]item, len(mk), len(mk))
 		// Get all values
 		for i, _ := range items {
-			items[i].name = strValue(mk[i], fltr)
+			items[i].name = formatValue(mk[i], fltr)
 			items[i].value = val.MapIndex(mk[i])
 		}
 
@@ -169,15 +169,15 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 	}
 }
 
-func strValue(val reflect.Value, fltr structFieldFilter) string {
-	switch val.Kind() {
-	case reflect.String:
+func formatValue(val reflect.Value, fltr structFieldFilter) string {
+	if val.Kind() == reflect.String {
 		return "\"" + val.Interface().(string) + "\""
-	default:
-		buf := new(bytes.Buffer)
-		writeValue(buf, val, fltr)
-		return string(buf.Bytes())
 	}
+
+	var buf bytes.Buffer
+	writeValue(&buf, val, fltr)
+
+	return string(buf.Bytes())
 }
 
 func filterField(f reflect.StructField, version int) (string, bool) {
@@ -229,9 +229,12 @@ func filterField(f reflect.StructField, version int) (string, bool) {
 }
 
 func serialize(object interface{}, version int) []byte {
-	s := strValue(reflect.ValueOf(object),
+	var buf bytes.Buffer
+
+	writeValue(&buf, reflect.ValueOf(object),
 		func(f reflect.StructField) (string, bool) {
 			return filterField(f, version)
 		})
-	return []byte(s)
+
+	return buf.Bytes()
 }
