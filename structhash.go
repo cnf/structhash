@@ -80,7 +80,7 @@ func (s itemSorter) Less(i, j int) bool {
 
 type structFieldFilter func(reflect.StructField) (string, bool)
 
-func writeValue(buf *bytes.Buffer, val reflect.Value, depth int, fltr structFieldFilter) {
+func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 	switch val.Kind() {
 	case reflect.String:
 		buf.WriteByte('"')
@@ -92,24 +92,24 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, depth int, fltr structFiel
 		buf.WriteString(strconv.FormatUint(val.Uint(), 10))
 	case reflect.Bool:
 		if val.Bool() {
-			buf.WriteString("true")
+			buf.WriteByte('t')
 		} else {
-			buf.WriteString("false")
+			buf.WriteByte('f')
 		}
 	case reflect.Ptr:
 		if !val.IsNil() || val.Type().Elem().Kind() == reflect.Struct {
-			writeValue(buf, reflect.Indirect(val), depth, fltr)
+			writeValue(buf, reflect.Indirect(val), fltr)
 		} else {
-			writeValue(buf, reflect.Zero(val.Type().Elem()), depth, fltr)
+			writeValue(buf, reflect.Zero(val.Type().Elem()), fltr)
 		}
 	case reflect.Array, reflect.Slice:
 		buf.WriteByte('[')
 		len := val.Len()
 		for i := 0; i < len; i++ {
 			if i != 0 {
-				buf.WriteString(", ")
+				buf.WriteByte(',')
 			}
-			writeValue(buf, val.Index(i), depth+1, fltr)
+			writeValue(buf, val.Index(i), fltr)
 		}
 		buf.WriteByte(']')
 	case reflect.Map:
@@ -117,7 +117,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, depth int, fltr structFiel
 		items := make([]item, len(mk), len(mk))
 		// Get all values
 		for i, _ := range items {
-			items[i].name = strValue(mk[i], depth+1, fltr)
+			items[i].name = strValue(mk[i], fltr)
 			items[i].value = val.MapIndex(mk[i])
 		}
 
@@ -127,11 +127,11 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, depth int, fltr structFiel
 		buf.WriteByte('[')
 		for i, _ := range items {
 			if i != 0 {
-				buf.WriteString(", ")
+				buf.WriteByte(',')
 			}
 			buf.WriteString(items[i].name)
-			buf.WriteString(": ")
-			writeValue(buf, items[i].value, depth+1, fltr)
+			buf.WriteByte(':')
+			writeValue(buf, items[i].value, fltr)
 		}
 		buf.WriteByte(']')
 	case reflect.Struct:
@@ -154,22 +154,14 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, depth int, fltr structFiel
 		// Sort fields by name
 		sort.Sort(itemSorter(items))
 
-		buf.WriteString("{\n")
+		buf.WriteByte('{')
 		for i, _ := range items {
 			if i != 0 {
-				buf.WriteString(", \n")
+				buf.WriteByte(',')
 			}
-			for i := 0; i < depth+1; i++ {
-				buf.WriteString("  ")
-			}
-			buf.WriteByte('"')
 			buf.WriteString(items[i].name)
-			buf.WriteString("\": ")
-			writeValue(buf, items[i].value, depth+1, fltr)
-		}
-		buf.WriteByte('\n')
-		for i := 0; i < depth; i++ {
-			buf.WriteString("  ")
+			buf.WriteByte(':')
+			writeValue(buf, items[i].value, fltr)
 		}
 		buf.WriteByte('}')
 	default:
@@ -177,13 +169,13 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, depth int, fltr structFiel
 	}
 }
 
-func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
+func strValue(val reflect.Value, fltr structFieldFilter) string {
 	switch val.Kind() {
 	case reflect.String:
 		return "\"" + val.Interface().(string) + "\""
 	default:
 		buf := new(bytes.Buffer)
-		writeValue(buf, val, depth, fltr)
+		writeValue(buf, val, fltr)
 		return string(buf.Bytes())
 	}
 }
@@ -237,9 +229,9 @@ func filterField(f reflect.StructField, version int) (string, bool) {
 }
 
 func serialize(object interface{}, version int) []byte {
-	s := strValue(reflect.ValueOf(object), 0,
+	s := strValue(reflect.ValueOf(object),
 		func(f reflect.StructField) (string, bool) {
 			return filterField(f, version)
 		})
-	return []byte(s+"\n")
+	return []byte(s)
 }
