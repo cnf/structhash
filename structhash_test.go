@@ -60,8 +60,8 @@ func dataSetup() *First {
 }
 
 func TestHash(t *testing.T) {
-	v1Hash := "v1_19a51ad2e72bc84e8c35dcdfe55e4d79"
-	v2Hash := "v2_00a9b29c4d344aec8114c76b324757c0"
+	v1Hash := "v1_39f4bc683762286061af1484d1d05c0b"
+	v2Hash := "v2_9504d3f08564b00903ba2c41325981d8"
 
 	data := dataSetup()
 	v1, err := Hash(data, 1)
@@ -115,7 +115,7 @@ func TestTags(t *testing.T) {
 	}
 }
 
-func TestNil(t *testing.T) {
+func TestNils(t *testing.T) {
 	s1 := Nils{
 		Str:   nil,
 		Int:   nil,

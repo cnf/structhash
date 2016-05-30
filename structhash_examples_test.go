@@ -38,7 +38,7 @@ func ExampleHash() {
 	}
 	fmt.Printf("%s", hash)
 	// Output:
-	// v1_d00068b9441e09d87689c7cb06a646a1
+	// v1_6a50d73f3bd0b9ebd001a0b610f387f0
 }
 
 func ExampleHash_tags() {
@@ -83,9 +83,9 @@ func ExampleHash_tags() {
 	fmt.Printf("%s\n", hashV2)
 	fmt.Printf("%s\n", hashV3)
 	// Output:
-	// v1_a4500d206f830e75bb4b362705ee6240
-	// v2_67caf9d9f9d2922ecc6f997bace6f06c
-	// v3_a10f69ec95d652fc16f5f744a554e624
+	// v1_45d8a54c5f5fd287f197b26d128882cd
+	// v2_babd7618f29036f5564816bee6c8a037
+	// v3_012b06239f942549772c9139d66c121e
 }
 
 func ExampleDump() {
@@ -117,8 +117,8 @@ func ExampleDump() {
 	fmt.Printf("md5:  %x\n", md5.Sum(Dump(bob, 1)))
 	fmt.Printf("sha1: %x\n", sha1.Sum(Dump(bob, 1)))
 	// Output:
-	// md5:  d00068b9441e09d87689c7cb06a646a1
-	// sha1: 24c19cd7a9fcfd4d4394e1f6a1874bd8751645e3
+	// md5:  6a50d73f3bd0b9ebd001a0b610f387f0
+	// sha1: c45f097a37366eaaf6ffbc7357c2272cd8fb64f6
 }
 
 func ExampleVersion() {

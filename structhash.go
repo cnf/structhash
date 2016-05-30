@@ -1,6 +1,7 @@
 package structhash
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
 	"fmt"
@@ -41,7 +42,7 @@ func Hash(c interface{}, version int) (string, error) {
 // Dump takes a data structure and returns its byte representation. This can be
 // useful if you need to use your own hashing function or formatter.
 func Dump(c interface{}, version int) []byte {
-	return []byte(serialize(c, version))
+	return serialize(c, version)
 }
 
 // Md5 takes a data structure and returns its md5 hash.
@@ -58,112 +59,155 @@ func Sha1(c interface{}, version int) []byte {
 	return sum[:]
 }
 
+type item struct {
+	name  string
+	value reflect.Value
+}
+
+type itemSorter []item
+
+func (s itemSorter) Len() int {
+	return len(s)
+}
+
+func (s itemSorter) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s itemSorter) Less(i, j int) bool {
+	return s[i].name < s[j].name
+}
+
 type structFieldFilter func(reflect.StructField) (string, bool)
 
-func strValue(val reflect.Value, depth int, fltr structFieldFilter) string {
+func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 	switch val.Kind() {
 	case reflect.String:
-		return "\"" + val.String() + "\""
+		buf.WriteByte('"')
+		buf.WriteString(val.String())
+		buf.WriteByte('"')
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return fmt.Sprintf("%d", val.Int())
+		buf.WriteString(strconv.FormatInt(val.Int(), 10))
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return fmt.Sprintf("%d", val.Uint())
+		buf.WriteString(strconv.FormatUint(val.Uint(), 10))
 	case reflect.Bool:
 		if val.Bool() {
-			return "true"
+			buf.WriteByte('t')
+		} else {
+			buf.WriteByte('f')
 		}
-		return "false"
 	case reflect.Ptr:
 		if !val.IsNil() || val.Type().Elem().Kind() == reflect.Struct {
-			return strValue(reflect.Indirect(val), depth, fltr)
+			writeValue(buf, reflect.Indirect(val), fltr)
 		} else {
-			return strValue(reflect.Zero(val.Type().Elem()), depth, fltr)
+			writeValue(buf, reflect.Zero(val.Type().Elem()), fltr)
 		}
 	case reflect.Array, reflect.Slice:
+		buf.WriteByte('[')
 		len := val.Len()
-		ret := "["
 		for i := 0; i < len; i++ {
 			if i != 0 {
-				ret = ret + ", "
+				buf.WriteByte(',')
 			}
-			ret = ret + strValue(val.Index(i), depth+1, fltr)
+			writeValue(buf, val.Index(i), fltr)
 		}
-		ret = ret + "]"
-		return ret
+		buf.WriteByte(']')
 	case reflect.Map:
-		len := val.Len()
 		mk := val.MapKeys()
-		strmap := make(map[string]string, len)
-		// Map/serialize all values
-		for i := 0; i < len; i++ {
-			strmap[strValue(mk[i], depth+1, fltr)] =
-				strValue(val.MapIndex(mk[i]), depth+1, fltr)
+		items := make([]item, len(mk), len(mk))
+		// Get all values
+		for i, _ := range items {
+			items[i].name = formatValue(mk[i], fltr)
+			items[i].value = val.MapIndex(mk[i])
 		}
 
-		// Create array to hold map keys and sort them
-		skey := make([]string, 0, len)
-		for k := range strmap {
-			skey = append(skey, k)
-		}
-		sort.Strings(skey)
+		// Sort values by key
+		sort.Sort(itemSorter(items))
 
-		ret := "["
-		for i := 0; i < len; i++ {
+		buf.WriteByte('[')
+		for i, _ := range items {
 			if i != 0 {
-				ret = ret + ", "
+				buf.WriteByte(',')
 			}
-			ret = ret + skey[i] + ": " + strmap[skey[i]]
+			buf.WriteString(items[i].name)
+			buf.WriteByte(':')
+			writeValue(buf, items[i].value, fltr)
 		}
-		ret = ret + "]"
-		return ret
+		buf.WriteByte(']')
 	case reflect.Struct:
 		vtype := val.Type()
 		flen := vtype.NumField()
-		smap := make(map[string]string)
+		items := make([]item, 0, flen)
 		// Get all fields
 		for i := 0; i < flen; i++ {
 			field := vtype.Field(i)
-			name := field.Name
+			it := item{field.Name, val.Field(i)}
 			if fltr != nil {
-				if newname, ok := fltr(field); ok {
-					name = newname
+				if name, ok := fltr(field); ok {
+					it.name = name
 				} else {
 					continue
 				}
 			}
-			fval := val.Field(i)
-			smap[name] = strValue(fval, depth+1, fltr)
+			items = append(items, it)
 		}
-		// Get the keys and sort them
-		skey := make([]string, len(smap))
-		c := 0
-		for k := range smap {
-			skey[c] = k
-			c++
-		}
-		sort.Strings(skey)
+		// Sort fields by name
+		sort.Sort(itemSorter(items))
 
-		flen = len(skey)
-		ret := "{\n"
-		for i := 0; i < flen; i++ {
+		buf.WriteByte('{')
+		for i, _ := range items {
 			if i != 0 {
-				ret = ret + ", \n"
+				buf.WriteByte(',')
 			}
-			ret = ret + strings.Repeat("  ", depth+1) + "\"" + skey[i] + "\": "
-			ret = ret + smap[skey[i]]
+			buf.WriteString(items[i].name)
+			buf.WriteByte(':')
+			writeValue(buf, items[i].value, fltr)
 		}
-		return ret + "\n" + strings.Repeat("  ", depth) + "}"
+		buf.WriteByte('}')
 	default:
-		return val.String()
+		buf.WriteString(val.String())
 	}
 }
 
-func serialize(object interface{}, version int) string {
-	return strValue(reflect.ValueOf(object), 0, func(f reflect.StructField) (string, bool) {
-		var err error
-		name := f.Name
-		ver := 0
-		lastver := -1
+func formatValue(val reflect.Value, fltr structFieldFilter) string {
+	if val.Kind() == reflect.String {
+		return "\"" + val.Interface().(string) + "\""
+	}
+
+	var buf bytes.Buffer
+	writeValue(&buf, val, fltr)
+
+	return string(buf.Bytes())
+}
+
+func filterField(f reflect.StructField, version int) (string, bool) {
+	var err error
+	name := f.Name
+	ver := 0
+	lastver := -1
+	if str := f.Tag.Get("hash"); str != "" {
+		if str == "-" {
+			return "", false
+		}
+		for _, tag := range strings.Split(str, " ") {
+			args := strings.Split(strings.TrimSpace(tag), ":")
+			if len(args) != 2 {
+				return "", false
+			}
+			switch args[0] {
+			case "name":
+				name = args[1]
+			case "version":
+				if ver, err = strconv.Atoi(args[1]); err != nil {
+					return "", false
+				}
+			case "lastversion":
+				if lastver, err = strconv.Atoi(args[1]); err != nil {
+					return "", false
+				}
+			}
+		}
+	} else {
 		if str := f.Tag.Get("lastversion"); str != "" {
 			if lastver, err = strconv.Atoi(str); err != nil {
 				return "", false
@@ -174,35 +218,23 @@ func serialize(object interface{}, version int) string {
 				return "", false
 			}
 		}
-		if str := f.Tag.Get("hash"); str != "" {
-			if str == "-" {
-				return "", false
-			}
-			for _, tag := range strings.Split(str, " ") {
-				args := strings.Split(strings.TrimSpace(tag), ":")
-				if len(args) != 2 {
-					return "", false
-				}
-				switch args[0] {
-				case "name":
-					name = args[1]
-				case "version":
-					if ver, err = strconv.Atoi(args[1]); err != nil {
-						return "", false
-					}
-				case "lastversion":
-					if lastver, err = strconv.Atoi(args[1]); err != nil {
-						return "", false
-					}
-				}
-			}
-		}
-		if lastver != -1 && lastver < version {
-			return "", false
-		}
-		if ver > version {
-			return "", false
-		}
-		return name, true
-	}) + "\n"
+	}
+	if lastver != -1 && lastver < version {
+		return "", false
+	}
+	if ver > version {
+		return "", false
+	}
+	return name, true
+}
+
+func serialize(object interface{}, version int) []byte {
+	var buf bytes.Buffer
+
+	writeValue(&buf, reflect.ValueOf(object),
+		func(f reflect.StructField) (string, bool) {
+			return filterField(f, version)
+		})
+
+	return buf.Bytes()
 }
