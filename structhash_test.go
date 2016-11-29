@@ -40,6 +40,12 @@ type Nils struct {
 	Slice []string
 }
 
+type unexportedTags struct {
+	foo  string
+	bar  string
+	aMap map[string]string
+}
+
 func dataSetup() *First {
 	tmpmap := make(map[string]string)
 	tmpmap["foo"] = "bar"
@@ -136,5 +142,27 @@ func TestNils(t *testing.T) {
 	s2_dump := string(Dump(s2, 1))
 	if s1_dump != s2_dump {
 		t.Errorf("%s is not %s", s1_dump, s2_dump)
+	}
+}
+
+func TestUnexportedFields(t *testing.T) {
+	v1Hash := "v1_750efb7c919caf87f2ab0d119650c87d"
+	data := unexportedTags{
+		foo: "foo",
+		bar: "bar",
+		aMap: map[string]string{
+			"key1": "val",
+		},
+	}
+	v1, err := Hash(data, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	if v1 != v1Hash {
+		t.Errorf("%s is not %s", v1, v1Hash)
+	}
+	v1md5 := fmt.Sprintf("v1_%x", Md5(data, 1))
+	if v1md5 != v1Hash {
+		t.Errorf("%s is not %s", v1md5, v1Hash[3:])
 	}
 }
