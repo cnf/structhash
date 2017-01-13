@@ -9,6 +9,7 @@ type First struct {
 	Bool   bool    `version:"1"`
 	String string  `version:"2"`
 	Int    int     `version:"1" lastversion:"1"`
+	Float  float64 `version:"1"`
 	Struct *Second `version:"1"`
 }
 
@@ -52,6 +53,7 @@ func dataSetup() *First {
 		Bool:   true,
 		String: "test",
 		Int:    123456789,
+		Float:  65.3458,
 		Struct: &Second{
 			Map:   tmpmap,
 			Slice: tmpslice,
@@ -60,8 +62,8 @@ func dataSetup() *First {
 }
 
 func TestHash(t *testing.T) {
-	v1Hash := "v1_39f4bc683762286061af1484d1d05c0b"
-	v2Hash := "v2_9504d3f08564b00903ba2c41325981d8"
+	v1Hash := "v1_62e7ecb173a82d91a46dec379dc55f1d"
+	v2Hash := "v2_dc9e2fcb14ecd98977a776cff9134590"
 
 	data := dataSetup()
 	v1, err := Hash(data, 1)
