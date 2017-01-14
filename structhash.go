@@ -171,7 +171,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 
 func formatValue(val reflect.Value, fltr structFieldFilter) string {
 	if val.Kind() == reflect.String {
-		return "\"" + val.Interface().(string) + "\""
+		return "\"" + val.String() + "\""
 	}
 
 	var buf bytes.Buffer
