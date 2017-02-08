@@ -11,6 +11,7 @@ type First struct {
 	Int    int     `version:"1" lastversion:"1"`
 	Float  float64 `version:"1"`
 	Struct *Second `version:"1"`
+	Uint   uint    `version:"1"`
 }
 
 type Second struct {
@@ -64,12 +65,13 @@ func dataSetup() *First {
 			Map:   tmpmap,
 			Slice: tmpslice,
 		},
+		Uint: 1,
 	}
 }
 
 func TestHash(t *testing.T) {
-	v1Hash := "v1_62e7ecb173a82d91a46dec379dc55f1d"
-	v2Hash := "v2_dc9e2fcb14ecd98977a776cff9134590"
+	v1Hash := "v1_e8e67581aee36d7237603381a9cbd9fc"
+	v2Hash := "v2_5e51490d7c24c4b7a9e63c04f55734eb"
 
 	data := dataSetup()
 	v1, err := Hash(data, 1)
