@@ -48,6 +48,12 @@ type unexportedTags struct {
 	aMap map[string]string
 }
 
+type interfaceStruct struct {
+	Name            string
+	Interface1      interface{}
+	InterfaceIgnore interface{} `hash:"-"`
+}
+
 func dataSetup() *First {
 	tmpmap := make(map[string]string)
 	tmpmap["foo"] = "bar"
@@ -168,5 +174,74 @@ func TestUnexportedFields(t *testing.T) {
 	v1md5 := fmt.Sprintf("v1_%x", Md5(data, 1))
 	if v1md5 != v1Hash {
 		t.Errorf("%s is not %s", v1md5, v1Hash[3:])
+	}
+}
+
+func TestInterfaceField(t *testing.T) {
+	a := interfaceStruct{
+		Name:            "name",
+		Interface1:      "a",
+		InterfaceIgnore: "b",
+	}
+
+	b := interfaceStruct{
+		Name:            "name",
+		Interface1:      "b",
+		InterfaceIgnore: "b",
+	}
+
+	c := interfaceStruct{
+		Name:            "name",
+		Interface1:      "b",
+		InterfaceIgnore: "c",
+	}
+
+	ha, err := Hash(a, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	hb, err := Hash(b, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	hc, err := Hash(c, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if ha == hb {
+		t.Errorf("%s equals %s", ha, hb)
+	}
+
+	if hb != hc {
+		t.Errorf("%s is not %s", hb, hc)
+	}
+	b.Interface1 = map[string]string{"key": "value"}
+	c.Interface1 = map[string]string{"key": "value"}
+
+	hb, err = Hash(b, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	hc, err = Hash(c, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if hb != hc {
+		t.Errorf("%s is not %s", hb, hc)
+	}
+
+	c.Interface1 = map[string]string{"key1": "value1"}
+	hc, err = Hash(c, 1)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if hb == hc {
+		t.Errorf("%s equals %s", hb, hc)
 	}
 }
