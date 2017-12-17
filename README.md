@@ -5,6 +5,7 @@ structhash is a Go library for generating hash strings of arbitrary data structu
 ## Features
 
 * fields may be ignored or renamed (like in `json.Marshal`, but using different struct tag)
+* fields may be serialized
 * fields may be versioned
 * fields order in struct doesn't matter (unlike `json.Marshal`)
 * nil values are treated equally to zero values
@@ -70,7 +71,7 @@ func main() {
 structhash supports struct tags in the following forms:
 
 * `hash:"-"`, or
-* `hash:"name:{string} version:{number} lastversion:{number}"`
+* `hash:"name:{string} version:{number} lastversion:{number} method:{string}"`
 
 All fields are optional and may be ommitted. Their semantics is:
 
@@ -78,14 +79,16 @@ All fields are optional and may be ommitted. Their semantics is:
 * `name:{string}` - rename field (may be useful when you want to rename field but keep hashes unchanged for backward compatibility)
 * `version:{number}` - ignore field if version passed to structhash is smaller than given number
 * `lastversion:{number}` - ignore field if version passed to structhash is greater than given number
+* `method:{string}` - use the return value of a field's method instead of the field itself
 
 Example:
 
 ```go
 type MyStruct struct {
-    Ignored string `hash:"-"`
-    Renamed string `hash:"name:OldName version:1"`
-    Legacy  string `hash:"version:1 lastversion:2"`
+    Ignored    string `hash:"-"`
+    Renamed    string `hash:"name:OldName version:1"`
+    Legacy     string `hash:"version:1 lastversion:2"`
+    Serialized error  `hash:"method:Error"`
 }
 ```
 

@@ -151,7 +151,11 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 			field := vtype.Field(i)
 			it := item{field.Name, val.Field(i)}
 			if fltr != nil {
-				if ok, _ := fltr(field, &it); !ok {
+				ok, err := fltr(field, &it)
+				if err != nil && strings.Contains(err.Error(), "method:") {
+					panic(err)
+				}
+				if !ok {
 					continue
 				}
 			}
@@ -212,6 +216,12 @@ func filterField(f reflect.StructField, i *item, version int) (bool, error) {
 				if lastver, err = strconv.Atoi(args[1]); err != nil {
 					return false, tagError(tag)
 				}
+			case "method":
+				property, found := f.Type.MethodByName(strings.TrimSpace(args[1]))
+				if !found || property.Type.NumOut() != 1 {
+					return false, tagError(tag)
+				}
+				i.value = property.Func.Call([]reflect.Value{i.value})[0]
 			}
 		}
 	} else {
