@@ -78,7 +78,7 @@ func (s itemSorter) Less(i, j int) bool {
 	return s[i].name < s[j].name
 }
 
-type structFieldFilter func(reflect.StructField) (string, bool)
+type structFieldFilter func(reflect.StructField, *item) bool
 
 func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 	switch val.Kind() {
@@ -145,9 +145,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 			field := vtype.Field(i)
 			it := item{field.Name, val.Field(i)}
 			if fltr != nil {
-				if name, ok := fltr(field); ok {
-					it.name = name
-				} else {
+				if ok := fltr(field, &it); !ok {
 					continue
 				}
 			}
@@ -184,60 +182,59 @@ func formatValue(val reflect.Value, fltr structFieldFilter) string {
 	return string(buf.Bytes())
 }
 
-func filterField(f reflect.StructField, version int) (string, bool) {
+func filterField(f reflect.StructField, i *item, version int) bool {
 	var err error
-	name := f.Name
 	ver := 0
 	lastver := -1
 	if str := f.Tag.Get("hash"); str != "" {
 		if str == "-" {
-			return "", false
+			return false
 		}
 		for _, tag := range strings.Split(str, " ") {
 			args := strings.Split(strings.TrimSpace(tag), ":")
 			if len(args) != 2 {
-				return "", false
+				return false
 			}
 			switch args[0] {
 			case "name":
-				name = args[1]
+				i.name = args[1]
 			case "version":
 				if ver, err = strconv.Atoi(args[1]); err != nil {
-					return "", false
+					return false
 				}
 			case "lastversion":
 				if lastver, err = strconv.Atoi(args[1]); err != nil {
-					return "", false
+					return false
 				}
 			}
 		}
 	} else {
 		if str := f.Tag.Get("lastversion"); str != "" {
 			if lastver, err = strconv.Atoi(str); err != nil {
-				return "", false
+				return false
 			}
 		}
 		if str := f.Tag.Get("version"); str != "" {
 			if ver, err = strconv.Atoi(str); err != nil {
-				return "", false
+				return false
 			}
 		}
 	}
 	if lastver != -1 && lastver < version {
-		return "", false
+		return false
 	}
 	if ver > version {
-		return "", false
+		return false
 	}
-	return name, true
+	return true
 }
 
 func serialize(object interface{}, version int) []byte {
 	var buf bytes.Buffer
 
 	writeValue(&buf, reflect.ValueOf(object),
-		func(f reflect.StructField) (string, bool) {
-			return filterField(f, version)
+		func(f reflect.StructField, i *item) bool {
+			return filterField(f, i, version)
 		})
 
 	return buf.Bytes()
