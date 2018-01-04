@@ -78,7 +78,13 @@ func (s itemSorter) Less(i, j int) bool {
 	return s[i].name < s[j].name
 }
 
-type structFieldFilter func(reflect.StructField) (string, bool)
+type tagError string
+
+func (e tagError) Error() string {
+	return "incorrect tag " + string(e)
+}
+
+type structFieldFilter func(reflect.StructField, *item) (bool, error)
 
 func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 	switch val.Kind() {
@@ -145,9 +151,11 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 			field := vtype.Field(i)
 			it := item{field.Name, val.Field(i)}
 			if fltr != nil {
-				if name, ok := fltr(field); ok {
-					it.name = name
-				} else {
+				ok, err := fltr(field, &it)
+				if err != nil && strings.Contains(err.Error(), "method:") {
+					panic(err)
+				}
+				if !ok {
 					continue
 				}
 			}
@@ -184,60 +192,65 @@ func formatValue(val reflect.Value, fltr structFieldFilter) string {
 	return string(buf.Bytes())
 }
 
-func filterField(f reflect.StructField, version int) (string, bool) {
+func filterField(f reflect.StructField, i *item, version int) (bool, error) {
 	var err error
-	name := f.Name
 	ver := 0
 	lastver := -1
 	if str := f.Tag.Get("hash"); str != "" {
 		if str == "-" {
-			return "", false
+			return false, nil
 		}
 		for _, tag := range strings.Split(str, " ") {
 			args := strings.Split(strings.TrimSpace(tag), ":")
 			if len(args) != 2 {
-				return "", false
+				return false, tagError(tag)
 			}
 			switch args[0] {
 			case "name":
-				name = args[1]
+				i.name = args[1]
 			case "version":
 				if ver, err = strconv.Atoi(args[1]); err != nil {
-					return "", false
+					return false, tagError(tag)
 				}
 			case "lastversion":
 				if lastver, err = strconv.Atoi(args[1]); err != nil {
-					return "", false
+					return false, tagError(tag)
 				}
+			case "method":
+				property, found := f.Type.MethodByName(strings.TrimSpace(args[1]))
+				if !found || property.Type.NumOut() != 1 {
+					return false, tagError(tag)
+				}
+				i.value = property.Func.Call([]reflect.Value{i.value})[0]
 			}
 		}
 	} else {
 		if str := f.Tag.Get("lastversion"); str != "" {
 			if lastver, err = strconv.Atoi(str); err != nil {
-				return "", false
+				return false, tagError(str)
 			}
 		}
 		if str := f.Tag.Get("version"); str != "" {
 			if ver, err = strconv.Atoi(str); err != nil {
-				return "", false
+				return false, tagError(str)
 			}
 		}
 	}
 	if lastver != -1 && lastver < version {
-		return "", false
+		return false, nil
 	}
 	if ver > version {
-		return "", false
+		return false, nil
 	}
-	return name, true
+	return true, nil
 }
 
 func serialize(object interface{}, version int) []byte {
 	var buf bytes.Buffer
 
 	writeValue(&buf, reflect.ValueOf(object),
-		func(f reflect.StructField) (string, bool) {
-			return filterField(f, version)
+		func(f reflect.StructField, i *item) (bool, error) {
+			return filterField(f, i, version)
 		})
 
 	return buf.Bytes()

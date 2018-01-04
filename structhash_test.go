@@ -34,6 +34,15 @@ type Tags3 struct {
 	Bar string
 }
 
+type Tags4 struct {
+	Data1 ambiguousData `hash:"method:Serialize"`
+	Data2 ambiguousData `hash:"method:Normalize"`
+}
+
+type Tags5 struct {
+	Data1 ambiguousData `hash:"method:UnknownMethod"`
+}
+
 type Nils struct {
 	Str   *string
 	Int   *int
@@ -52,6 +61,19 @@ type interfaceStruct struct {
 	Name            string
 	Interface1      interface{}
 	InterfaceIgnore interface{} `hash:"-"`
+}
+
+type ambiguousData struct {
+	Prefix string
+	Suffix string
+}
+
+func (p ambiguousData) Serialize() string {
+	return p.Prefix + p.Suffix
+}
+
+func (p ambiguousData) Normalize() ambiguousData {
+	return ambiguousData{p.Prefix + p.Suffix, ""}
 }
 
 func dataSetup() *First {
@@ -244,4 +266,29 @@ func TestInterfaceField(t *testing.T) {
 	if hb == hc {
 		t.Errorf("%s equals %s", hb, hc)
 	}
+}
+
+func TestMethod(t *testing.T) {
+	dump1 := Dump(Tags4{
+		ambiguousData{"123", "45"},
+		ambiguousData{"12", "345"},
+	}, 1)
+	dump2 := Dump(Tags4{
+		ambiguousData{"12", "345"},
+		ambiguousData{"123", "45"},
+	}, 1)
+	if string(dump1) != string(dump2) {
+		t.Errorf("%s not equals %s", dump1, dump2)
+	}
+}
+
+func TestMethodPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("dumping via incorrect \"method\" tag did not panic")
+		}
+	}()
+	_ = Dump(Tags5{
+		ambiguousData{"123", "45"},
+	}, 1)
 }
