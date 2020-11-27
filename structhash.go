@@ -175,6 +175,9 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 		}
 		buf.WriteByte('}')
 	case reflect.Interface:
+		if !val.CanInterface() {
+			return
+		}
 		writeValue(buf, reflect.ValueOf(val.Interface()), fltr)
 	default:
 		buf.WriteString(val.String())
