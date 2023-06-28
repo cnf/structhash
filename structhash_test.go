@@ -162,16 +162,8 @@ func TestNils(t *testing.T) {
 		Slice: nil,
 	}
 
-	s2 := Nils{
-		Str:   new(string),
-		Int:   new(int),
-		Bool:  new(bool),
-		Map:   make(map[string]string),
-		Slice: make([]string, 0),
-	}
-
 	s1_dump := string(Dump(s1, 1))
-	s2_dump := string(Dump(s2, 1))
+	s2_dump := `{Bool:"_nil",Int:"_nil",Map:"_nil",Slice:"_nil",Str:"_nil"}`
 	if s1_dump != s2_dump {
 		t.Errorf("%s is not %s", s1_dump, s2_dump)
 	}

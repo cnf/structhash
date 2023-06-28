@@ -86,7 +86,7 @@ func (e tagError) Error() string {
 
 type structFieldFilter func(reflect.StructField, *item) (bool, error)
 
-type NilPtr struct{}
+const nilPtrValue = "_nil"
 
 func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 	switch val.Kind() {
@@ -107,17 +107,11 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 			buf.WriteByte('f')
 		}
 	case reflect.Ptr:
-		if !val.IsNil() || val.Type().Elem().Kind() == reflect.Struct {
-			writeValue(buf, reflect.Indirect(val), fltr)
-		} else {
-			writeValue(buf, reflect.Zero(val.Type().Elem()), fltr)
-		}
-
 		if val.IsNil() {
 			if val.Type().Elem().Kind() == reflect.Struct {
 				writeValue(buf, reflect.Indirect(val), fltr)
 			} else {
-				writeValue(buf, reflect.ValueOf(NilPtr{}), fltr)
+				writeValue(buf, reflect.ValueOf(nilPtrValue), fltr)
 			}
 		} else {
 			writeValue(buf, reflect.Indirect(val), fltr)
@@ -125,7 +119,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 
 	case reflect.Array, reflect.Slice:
 		if val.IsNil() {
-			writeValue(buf, reflect.ValueOf(NilPtr{}), fltr)
+			writeValue(buf, reflect.ValueOf(nilPtrValue), fltr)
 		} else {
 			buf.WriteByte('[')
 			len := val.Len()
@@ -140,7 +134,7 @@ func writeValue(buf *bytes.Buffer, val reflect.Value, fltr structFieldFilter) {
 
 	case reflect.Map:
 		if val.IsNil() {
-			writeValue(buf, reflect.ValueOf(NilPtr{}), fltr)
+			writeValue(buf, reflect.ValueOf(nilPtrValue), fltr)
 		} else {
 			mk := val.MapKeys()
 			items := make([]item, len(mk), len(mk))
