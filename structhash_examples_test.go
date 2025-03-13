@@ -3,6 +3,8 @@ package structhash
 import (
 	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
 )
 
@@ -116,9 +118,13 @@ func ExampleDump() {
 
 	fmt.Printf("md5:  %x\n", md5.Sum(Dump(bob, 1)))
 	fmt.Printf("sha1: %x\n", sha1.Sum(Dump(bob, 1)))
+	fmt.Printf("sha256: %x\n", sha256.Sum256(Dump(bob, 1)))
+	fmt.Printf("sha512: %x\n", sha512.Sum512(Dump(bob, 1)))
 	// Output:
 	// md5:  6a50d73f3bd0b9ebd001a0b610f387f0
 	// sha1: c45f097a37366eaaf6ffbc7357c2272cd8fb64f6
+	// sha256: fffabfc403a7719974d60c40471374fc46c60d2f7a654a35868752cad92a4e87
+	// sha512: 7f39222f7f49c645727a9e36a41705ea653b901c66efa60c1479acb37c6a9c41940f4b0a57169c34d8a06b529006d16e4cc848661c7854aa326c0f52a8270dbd
 }
 
 func ExampleVersion() {
